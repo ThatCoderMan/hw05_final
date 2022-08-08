@@ -48,17 +48,17 @@ class PagesTests(TestCase):
             image=uploaded_image
         )
 
-        cls.second_user = User.objects.create_user(
-            username='second_test_profile')
-        cls.second_group = Group.objects.create(
-            title='second test group',
-            slug='second_test_group',
-            description='second_test_description',
+        cls.not_author_user = User.objects.create_user(
+            username='not_author_test_profile')
+        cls.not_author_group = Group.objects.create(
+            title='not author test group',
+            slug='not_author_test_group',
+            description='not_author_test_description',
         )
-        cls.second_post = Post.objects.create(
-            author=cls.second_user,
-            group=cls.second_group,
-            text='second test post'
+        cls.not_author_post = Post.objects.create(
+            author=cls.not_author_user,
+            group=cls.not_author_group,
+            text='not author test post'
         )
 
     @classmethod
@@ -70,7 +70,7 @@ class PagesTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.authorized_not_author_client = Client()
-        self.authorized_not_author_client.force_login(self.second_user)
+        self.authorized_not_author_client.force_login(self.not_author_user)
         self.guest_client = Client()
         cache.clear()
 
@@ -78,9 +78,9 @@ class PagesTests(TestCase):
         """URL-адреса использует соответствующие шаблоны."""
         templates_pages_names = {
             reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list', kwargs={'slug': 'test_group'}):
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}):
                 'posts/group_list.html',
-            reverse('posts:profile', kwargs={'username': 'test_profile'}):
+            reverse('posts:profile', kwargs={'username': self.user.username}):
                 'posts/profile.html',
             reverse('posts:post_detail', kwargs={'post_id': self.post.pk}):
                 'posts/post_detail.html',
@@ -103,30 +103,36 @@ class PagesTests(TestCase):
         self.assertIn(self.post, page_obj)
         self.assertIsNotNone(page_obj[self.post.pk].image)
 
+    def first_page_obj_is_post(self, response):
+        page_obj = response.context['page_obj']
+        self.assertEqual(page_obj[0], self.post)
+
+    def firtst_page_obj_image_is_not_none(self, response):
+        page_obj = response.context['page_obj']
+        self.assertIsNotNone(page_obj[0].image)
+
     def test_group_posts_page_show_correct_context(self):
         """Шаблон group_posts сформирован с правильным контекстом."""
-        url = reverse('posts:group_list', kwargs={'slug': 'test_group'})
+        url = reverse('posts:group_list', kwargs={'slug': self.group.slug})
         response = self.authorized_client.get(url)
         title = response.context['title']
         group = response.context['group']
-        page_obj = response.context['page_obj']
         self.assertEqual(title, 'Записи сообщества test group')
         self.assertEqual(group, self.group)
-        self.assertEqual(page_obj[0], self.post)
-        self.assertIsNotNone(page_obj[0].image)
+        self.first_page_obj_is_post(response)
+        self.firtst_page_obj_image_is_not_none(response)
 
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        url = reverse('posts:profile', kwargs={'username': 'test_profile'})
+        url = reverse('posts:profile', kwargs={'username': self.user.username})
         response = self.authorized_client.get(url)
         title = response.context['title']
         author = response.context['author']
-        page_obj = response.context['page_obj']
         following = response.context['following']
         self.assertEqual(title, 'Профайл пользователя test_profile')
         self.assertEqual(author, self.user)
-        self.assertEqual(page_obj[0], self.post)
-        self.assertIsNotNone(page_obj[0].image)
+        self.first_page_obj_is_post(response)
+        self.firtst_page_obj_image_is_not_none(response)
         self.assertFalse(following)
 
     def test_post_detail_page_show_correct_context(self):
@@ -173,30 +179,29 @@ class PagesTests(TestCase):
         test_urls = [
             reverse('posts:index'),
             reverse('posts:group_list',
-                    kwargs={'slug': 'second_test_group'}),
+                    kwargs={'slug': self.not_author_group.slug}),
             reverse('posts:profile',
-                    kwargs={'username': 'second_test_profile'})
+                    kwargs={'username': self.not_author_user.username})
         ]
         for url in test_urls:
             with self.subTest(url=url):
                 response = self.client.get(url)
-                print(response.context)
                 page_obj = response.context['page_obj']
-                self.assertIn(self.second_post, page_obj)
+                self.assertIn(self.not_author_post, page_obj)
 
     def test_new_post_not_in_another_pages(self):
         """Новый пост не появляется на других страницах"""
         test_urls = [
             reverse('posts:group_list',
-                    kwargs={'slug': 'test_group'}),
+                    kwargs={'slug': self.group.slug}),
             reverse('posts:profile',
-                    kwargs={'username': 'test_profile'})
+                    kwargs={'username': self.user.username})
         ]
         for url in test_urls:
             with self.subTest(url=url):
                 response = self.client.get(url)
                 page_obj = response.context['page_obj']
-                self.assertNotIn(self.second_post, page_obj)
+                self.assertNotIn(self.not_author_post, page_obj)
 
     def test_posts_edit_url_redirect_not_author_on_post_page(self):
         """Страница по адресу /posts/1/edit/ перенаправит не автора
@@ -263,14 +268,14 @@ class PagesTests(TestCase):
     def test_follow_page_show_current_context(self):
         """Шаблон follow_index сформирован с правильным контекстом."""
         Follow(
-            user=self.second_user,
+            user=self.not_author_user,
             author=self.user
         ).save()
         url = reverse('posts:follow_index')
         response = self.authorized_not_author_client.get(url)
         page_obj = response.context['page_obj']
         self.assertIn(self.post, page_obj)
-        self.assertNotIn(self.second_post, page_obj)
+        self.assertNotIn(self.not_author_post, page_obj)
 
 
 class PaginatorViewsTest(TestCase):
@@ -283,16 +288,16 @@ class PaginatorViewsTest(TestCase):
             slug='test_group',
             description='test_description',
         )
-        for post_id in range(13):
-            cls.post = Post.objects.create(
+        Post.objects.bulk_create([Post(
                 author=cls.user,
                 group=cls.group,
                 text=f'test post {post_id}'
-            )
+            ) for post_id in range(13)])
+
         cls.test_urls = [
             reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': 'test_group'}),
-            reverse('posts:profile', kwargs={'username': 'test_profile'})
+            reverse('posts:group_list', kwargs={'slug': cls.group.slug}),
+            reverse('posts:profile', kwargs={'username': cls.user.username})
         ]
 
     def setUp(self):
