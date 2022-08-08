@@ -288,11 +288,10 @@ class PaginatorViewsTest(TestCase):
             slug='test_group',
             description='test_description',
         )
-        Post.objects.bulk_create([Post(
-                author=cls.user,
-                group=cls.group,
-                text=f'test post {post_id}'
-            ) for post_id in range(13)])
+        Post.objects.bulk_create([Post(author=cls.user,
+                                       group=cls.group,
+                                       text=f'test post {post_id}')
+                                  for post_id in range(13)])
 
         cls.test_urls = [
             reverse('posts:index'),
