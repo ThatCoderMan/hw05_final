@@ -47,8 +47,7 @@ def profile(request, username):
     post_list = user.posts.select_related('group')
     page_obj = paginator_list(request, post_list)
     title = f'Профайл пользователя {username}'
-    author = User.objects.get(username=username)
-    following = Follow.objects.filter(author=author).exists()
+    following = Follow.objects.filter(author=user).exists()
     context = {
         'title': title,
         'author': user,
