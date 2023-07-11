@@ -1,0 +1,16 @@
+[run]
+command_line =
+    manage.py test -v 2
+source =
+    about
+    core
+    posts
+    users
+    yatube
+
+[report]
+omit =
+    */migrations/*
+    */apps.py
+    */wsgi.py
+    */tests/*

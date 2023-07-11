@@ -1,4 +1,4 @@
-name: Build and Test
+name: workflow
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'yandex-praktikum/hw05_final' }}
+#    if: ${{ github.repository == 'yandex-praktikum/hw05_final' }}
     strategy:
       matrix:
         python-version: [3.7, 3.8, 3.9]
@@ -32,15 +32,11 @@ jobs:
         path: yatube/
     - name: Lint with flake8 author
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 yatube --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings
         flake8 yatube --count --exit-zero --max-complexity=10 --max-line-length=79 --statistics --config=setup.cfg
     - name: Lint with flake8 tests
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 tests --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings
         flake8 tests --count --exit-zero --max-complexity=10 --max-line-length=79 --statistics
     - name: Test with pytest
       env:
@@ -50,3 +46,10 @@ jobs:
         ALLOWED_HOSTS: "*"
       run: |
         py.test
+        cd yatube/
+        coverage run && coverage report --fail-under=75 && coverage xml
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: backend/coverage.xml
