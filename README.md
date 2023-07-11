@@ -1,7 +1,7 @@
 # YaTube
 
 [![coverage](https://img.shields.io/codecov/c/github/ThatCoderMan/hw05_final.svg)](https://app.codecov.io/gh/ThatCoderMan/hw05_final)
-[![workflows](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
+[![workflows](https://github.com/ThatCoderMan/hw05_final/actions/workflows/python-app.yml/badge.svg)](https://github.com/ThatCoderMan/hw05_final/actions/workflows/python-app.yml)
 
 
 <details>
